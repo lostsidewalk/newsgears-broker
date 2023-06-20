@@ -1,0 +1,64 @@
+// 
+// docker build --build-arg JAR_FILE=build/libs/*.jar -t lostsidewalk/newsgears-broker .
+// 
+plugins {
+    id "org.springframework.boot" version "2.0.1.RELEASE"
+}
+
+apply plugin: 'java'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // newsgears-data
+    // implementation 'com.lostsidewalk.newsgears:newsgears-data:0.5.2'
+
+    // spring-boot-starter-parent
+    implementation 'org.springframework.boot:spring-boot-starter-parent:3.0.4'
+    // spring-boot-starter-actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.1.0'
+    // sprig-boot-starter-web
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.1.0'
+    // commons-collections4
+    implementation 'org.apache.commons:commons-collections4:4.4'
+    // commons-lang
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    // jaxb-api
+    implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359'
+    // GSON
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // postgresql driver
+    // runtimeOnly 'org.postgresql:postgresql:42.5.4'
+
+    // test
+    testImplementation('org.springframework.boot:spring-boot-starter-test:3.1.0') {
+        exclude group: 'com.vaadin.external.google', module: 'android-json'
+    }
+    // junit-jupiter
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+
+    // lombok
+    compileOnly 'org.projectlombok:lombok:1.18.26'
+    annotationProcessor 'org.projectlombok:lombok:1.18.26'
+    testCompileOnly 'org.projectlombok:lombok:1.18.26'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
+}
+
+springBoot {
+    mainClassName = 'com.lostsidewalk.buffy.broker.Application'
+}
+
+test {
+    useJUnitPlatform()
+}
