@@ -29,6 +29,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.1.0'
     // sprig-boot-starter-web
     implementation 'org.springframework.boot:spring-boot-starter-web:3.1.0'
+    // spring-boot-starter-websocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket:3.1.0'
+    // spring-boot-starter-security
+    implementation 'org.springframework.boot:spring-boot-starter-security:3.0.4'
     // commons-collections4
     implementation 'org.apache.commons:commons-collections4:4.4'
     // commons-lang
