@@ -76,7 +76,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
 	private static final ImmutableSet<String> OPEN_PATHS = ImmutableSet.of();
 
-	private static final ImmutableSet<String> OPEN_PATH_PREFIXES = ImmutableSet.of("/secured/");
+	private static final ImmutableSet<String> OPEN_PATH_PREFIXES = ImmutableSet.of("/secured/", "/actuator/");
 
 	private boolean isOpenServletPath(String servletPath) {
 		return OPEN_PATHS.contains(servletPath) || OPEN_PATH_PREFIXES.stream().anyMatch(servletPath::startsWith);
