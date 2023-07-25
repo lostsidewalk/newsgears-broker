@@ -6,13 +6,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAutoConfiguration
 @EnableScheduling
 @EnableConfigurationProperties
-//@PropertySource("classpath:secret.properties")
+@PropertySource("classpath:secret.properties")
 @ComponentScan({"com.lostsidewalk.buffy", "com.lostsidewalk.buffy.broker"})
 @Configuration
 public class Application {
