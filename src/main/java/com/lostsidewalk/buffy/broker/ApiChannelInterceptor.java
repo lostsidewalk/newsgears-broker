@@ -8,6 +8,7 @@ import com.lostsidewalk.buffy.broker.audit.AuthClaimException;
 import com.lostsidewalk.buffy.broker.audit.TokenValidationException;
 import com.lostsidewalk.buffy.broker.auth.AuthService;
 import com.lostsidewalk.buffy.broker.auth.JwtProcessor;
+import com.lostsidewalk.buffy.broker.auth.SingleUserModeProcessor;
 import com.lostsidewalk.buffy.broker.auth.WebAuthenticationToken;
 import com.lostsidewalk.buffy.broker.token.TokenService;
 import com.lostsidewalk.buffy.broker.user.LocalUserService;
@@ -66,8 +67,13 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
 
     private final SimpUserRegistry simpUserRegistry;
 
+    private final boolean singleUserMode;
+
+    private final String adminUsername;
+
     public ApiChannelInterceptor(AuthService authService, TokenService tokenService, LocalUserService localUserService,
-                                 JwtProcessor jwtProcessor, SimpUserRegistry simpUserRegistry)
+                                 JwtProcessor jwtProcessor, SimpUserRegistry simpUserRegistry, boolean singleUserMode,
+                                 String adminUsername)
     {
         super();
         this.authService = authService;
@@ -75,6 +81,8 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
         this.localUserService = localUserService;
         this.jwtProcessor = jwtProcessor;
         this.simpUserRegistry = simpUserRegistry;
+        this.singleUserMode = singleUserMode;
+        this.adminUsername = adminUsername;
     }
 
     @Override
@@ -94,16 +102,23 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
                 }
                 try {
                     if (CONNECT.equals(accessor.getCommand())) {
-                        if (isEmpty(tokenList)) {
-                            log.error("");
-                            return null;
+                        String username;
+                        if (singleUserMode) {
+                            username = adminUsername;
+                            String token = tokenList.get(0);
+                            performUserLogin(adminUsername, token, accessor);
+                        } else {
+                            if (isEmpty(tokenList)) {
+                                log.error("");
+                                return null;
+                            }
+                            String token = tokenList.get(0);
+                            TokenService.JwtUtil jwtUtil = tokenService.instanceFor(APP_AUTH, token);
+                            jwtUtil.requireNonExpired();
+                            username = jwtUtil.extractUsername();
+                            jwtProcessor.processJwt(jwtUtil, authService.requireAuthClaim(username));
+                            performUserLogin(username, token, accessor);
                         }
-                        String token = tokenList.get(0);
-                        TokenService.JwtUtil jwtUtil = tokenService.instanceFor(APP_AUTH, token);
-                        jwtUtil.requireNonExpired();
-                        String username = jwtUtil.extractUsername();
-                        jwtProcessor.processJwt(jwtUtil, authService.requireAuthClaim(username));
-                        performUserLogin(username, token, accessor);
                         log.debug("Authenticated JWT header for WebSocket connection to user: {}", username);
                         log.info("User connected to WebSocket broker: {}", username);
                     } else if (SUBSCRIBE.equals(stompCommand)) {

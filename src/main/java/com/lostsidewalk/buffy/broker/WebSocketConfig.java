@@ -88,6 +88,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     JwtProcessor jwtProcessor;
 
+    @Value("${newsgears.singleUserMode:false}")
+    boolean singleUserMode;
+
+    @Value("${newsgears.adminUsername:me}")
+    String adminUsername;
+
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(
@@ -96,7 +102,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         tokenService,
                         localUserService,
                         jwtProcessor,
-                        userRegistry())
+                        userRegistry(),
+                        singleUserMode,
+                        adminUsername)
         );
     }
 }

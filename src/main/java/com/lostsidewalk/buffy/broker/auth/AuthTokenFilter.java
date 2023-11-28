@@ -13,6 +13,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -36,6 +37,12 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 	@Autowired
 	ServerAuthHandler serverAuthHandler;
 
+	@Autowired
+	SingleUserModeProcessor singleUserModeProcessor;
+
+	@Value("${newsgears.singleUserMode:false}")
+	boolean singleUserMode;
+
 	@Override
 	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
 			throws ServletException, IOException {
@@ -45,7 +52,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 				if (isServerRequest(request)) {
 					serverAuthHandler.processServerRequest(request, response);
 				} else {
-					applicationAuthHandler.processAllOthers(request, response);
+					if (singleUserMode) {
+						singleUserModeProcessor.setupSession();
+					} else {
+						applicationAuthHandler.processAllOthers(request, response);
+					}
 				}
 			} catch (TokenValidationException e) {
 				log.warn("Token validation failed for requestUrl={}, requestMethod={}, due to: {}", request.getRequestURL(), request.getMethod(), getRootCauseMessage(e));
