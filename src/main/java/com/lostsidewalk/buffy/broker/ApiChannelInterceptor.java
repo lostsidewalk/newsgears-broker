@@ -8,7 +8,6 @@ import com.lostsidewalk.buffy.broker.audit.AuthClaimException;
 import com.lostsidewalk.buffy.broker.audit.TokenValidationException;
 import com.lostsidewalk.buffy.broker.auth.AuthService;
 import com.lostsidewalk.buffy.broker.auth.JwtProcessor;
-import com.lostsidewalk.buffy.broker.auth.SingleUserModeProcessor;
 import com.lostsidewalk.buffy.broker.auth.WebAuthenticationToken;
 import com.lostsidewalk.buffy.broker.token.TokenService;
 import com.lostsidewalk.buffy.broker.user.LocalUserService;
@@ -38,6 +37,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.collections4.CollectionUtils.isEmpty;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.springframework.messaging.simp.stomp.StompCommand.*;
 import static org.springframework.security.core.context.SecurityContextHolder.getContext;
@@ -153,6 +153,10 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
                                     accessor.setMessageId(messageId);
                                     JsonObject newPayload = new JsonObject();
                                     String responseDestination = getUserDestination(username);
+                                    if (isBlank(responseDestination)) {
+                                        log.error("Unable to pick response destination: user=" + username);
+                                        return null;
+                                    }
                                     newPayload.addProperty("responseDestination", responseDestination);
                                     newPayload.addProperty("responseUsername", username);
                                     accessor.setMessage(newPayload.toString());
@@ -215,6 +219,7 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
         }
 
     String getUserDestination(String username) {
+        String userDestination = null;
         SimpUser user = simpUserRegistry.getUser(username);
         if (user == null) {
             throw new RuntimeException("Unable to local user in STOMP registry, username=" + "api");
@@ -222,25 +227,26 @@ public class ApiChannelInterceptor implements ChannelInterceptor {
         Set<SimpSession> userSessions = user.getSessions();
         int sessionCount = userSessions.size();
         if (sessionCount > 0) {
-            // trivial load balancing, assuming uniform random distribution
-            int randomIndex = new Random().nextInt(sessionCount);
-            String userDestination = null;
-            int currentIndex = 0;
             for (SimpSession userSession : userSessions) {
-                if (currentIndex == randomIndex) {
-                    Set<SimpSubscription> userSubscriptions = userSession.getSubscriptions();
-                    if (isNotEmpty(userSubscriptions)) {
-                        userDestination = userSubscriptions.iterator().next().getDestination();
-                        break;
-                    } else {
-                        log.warn("User session is not subscribed, username={}, sessionId={}", username, userSession.getId());
+                Set<SimpSubscription> userSubscriptions = userSession.getSubscriptions();
+                if (isNotEmpty(userSubscriptions)) {
+                    for (SimpSubscription userSubscription : userSubscriptions) {
+                        userDestination = userSubscription.getDestination();
+                        if (isNotBlank(userDestination)) {
+                            break;
+                        }
                     }
+                } else {
+                    log.debug("User session is not subscribed, username={}, sessionId={}", username, userSession.getId());
                 }
-                currentIndex++;
             }
-            return userDestination;
+        } else {
+            log.warn("User session is not connected, username={}", username);
         }
-        return null;
+        if (isBlank(userDestination)) {
+            log.warn("No user destination for user={}", username);
+        }
+        return userDestination;
     }
 
     void performUserLogin(String username, String jwt, StompHeaderAccessor accessor) {
