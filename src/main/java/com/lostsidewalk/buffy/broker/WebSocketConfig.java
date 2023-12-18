@@ -55,10 +55,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
-        // Disable CSRF for WebSocket transport
-        registry.setMessageSizeLimit(128 * 1024)
-                .setSendBufferSizeLimit(512 * 1024)
-                .setSendTimeLimit(15 * 1000);
+        registry.setMessageSizeLimit(1024 * 1024)
+                .setSendBufferSizeLimit(1024 * 1024);
     }
 
     @Bean
